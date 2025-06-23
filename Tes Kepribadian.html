@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Kepribadian dan Potensi Diri</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Professional & Reflective (Indigo, Slate, White) -->
+    <!-- Application Structure Plan: A timed (15 min), 97-question self-assessment quiz. The structure features a start screen, a main quiz interface with full 'Previous' and 'Next' navigation, and a completion summary screen. This navigational freedom allows users to review and change their answers, which is suitable for a personality assessment. -->
+    <!-- Visualization & Content Choices: Report Info: Personality and self-potential statements. Goal: Facilitate self-reflection in a timed environment. Viz/Method: A 5-point Likert scale is presented as clickable buttons. A prominent timer and progress bar track progress. Interaction: Users select an option, which is visually highlighted. They control progression with navigation buttons. Justification: This user-controlled flow is less stressful than auto-advancing, encouraging more thoughtful responses despite the time limit. The 97 questions are generated programmatically. Library: Vanilla JS, Tailwind CSS. CONFIRMING NO SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .option-btn.selected {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            border-color: #4f46e5;
+        }
+        .nav-btn:disabled {
+            background-color: #d1d5db; /* gray-300 */
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex items-center justify-center min-h-screen p-4">
+    <div id="quiz-container" class="w-full max-w-3xl mx-auto">
+
+
+        <div id="start-screen" class="bg-white p-8 rounded-2xl shadow-lg text-center">
+            <h1 class="text-3xl font-bold text-slate-900">Kuis Kepribadian dan Potensi Diri</h1>
+            <p class="text-slate-600 mt-4 text-lg">Jawablah 97 pernyataan berikut sesuai dengan diri Anda yang sesungguhnya.</p>
+            <p class="text-slate-600 mt-2 text-lg">Waktu Anda adalah <span class="font-bold text-indigo-600">15 menit</span>. Tidak ada jawaban yang benar atau salah.</p>
+            <button id="start-button" class="bg-indigo-600 text-white w-full sm:w-auto px-12 py-4 mt-8 rounded-lg text-xl font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 transition-all duration-300">
+                Mulai
+            </button>
+        </div>
+
+
+        <div id="quiz-card" class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg transition-all duration-500 hidden">
+            <header class="mb-6">
+                <div class="flex justify-between items-center text-sm text-slate-600 mb-2">
+                    <span id="question-counter" class="font-medium">Pernyataan 1 dari 97</span>
+                     <span id="timer-display" class="font-bold text-lg text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">15:00</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-indigo-500 h-2.5 rounded-full transition-all duration-200" style="width: 1%"></div>
+                </div>
+            </header>
+
+
+            <main id="question-area" class="mt-8">
+                <p id="statement-text" class="text-xl sm:text-2xl font-medium text-center h-24 flex items-center justify-center mb-8"></p>
+                <div id="options-container" class="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
+                    <button data-value="5" class="option-btn border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 w-full sm:w-auto flex-grow text-center">Sangat Setuju</button>
+                    <button data-value="4" class="option-btn border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 w-full sm:w-auto flex-grow text-center">Setuju</button>
+                    <button data-value="3" class="option-btn border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 w-full sm:w-auto flex-grow text-center">Netral</button>
+                    <button data-value="2" class="option-btn border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 w-full sm:w-auto flex-grow text-center">Tidak Setuju</button>
+                    <button data-value="1" class="option-btn border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 w-full sm:w-auto flex-grow text-center">Sangat Tidak Setuju</button>
+                </div>
+            </main>
+             <footer class="mt-8">
+                <div class="flex justify-between items-center">
+                     <button id="prev-button" class="nav-btn bg-slate-500 text-white p-3 rounded-lg text-lg font-semibold hover:bg-slate-600 focus:outline-none focus:ring-4 focus:ring-slate-300 transition-all duration-300">
+                        &larr; Sebelumnya
+                    </button>
+                    <button id="next-button" class="nav-btn bg-indigo-600 text-white p-3 rounded-lg text-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300">
+                        Berikutnya &rarr;
+                    </button>
+                </div>
+            </footer>
+        </div>
+
+
+        <div id="results-card" class="bg-white p-8 rounded-2xl shadow-lg text-center hidden">
+            <h2 id="results-title" class="text-3xl font-bold text-slate-900">Terima Kasih!</h2>
+            <p class="text-slate-600 mt-4 text-lg">Anda telah menyelesaikan kuis.</p>
+            <p id="total-answered" class="text-slate-600 mt-2 text-lg">Anda telah merespons <span class="font-bold">0</span> dari 97 pernyataan.</p>
+            <button id="restart-button" class="bg-indigo-600 text-white w-full sm:w-auto px-10 py-4 mt-8 rounded-lg text-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 transition-all duration-300">
+                Ulangi Kuis
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        let statements = [];
+        let userResponses = {};
+        let currentStatementIndex = 0;
+        const totalStatements = 97;
+        let timerInterval;
+        const totalTime = 15 * 60;
+        let timeLeft = totalTime;
+
+
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const statementTextEl = document.getElementById('statement-text');
+        const optionsContainer = document.getElementById('options-container');
+        const questionCounterEl = document.getElementById('question-counter');
+        const timerDisplayEl = document.getElementById('timer-display');
+        const progressBarEl = document.getElementById('progress-bar');
+        const quizCard = document.getElementById('quiz-card');
+        const resultsCard = document.getElementById('results-card');
+        const resultsTitleEl = document.getElementById('results-title');
+        const totalAnsweredEl = document.getElementById('total-answered').querySelector('span');
+        const restartButton = document.getElementById('restart-button');
+        const nextButton = document.getElementById('next-button');
+        const prevButton = document.getElementById('prev-button');
+
+
+
+
+        function generateStatements(numStatements) {
+            const subjects = ["Saya", "Bagi saya", "Saya pikir", "Saya cenderung"];
+            const actions = [
+                "mudah beradaptasi dengan lingkungan baru", "lebih suka rutinitas yang terprediksi", "terbuka terhadap ide-ide baru",
+                "membutuhkan waktu sendiri untuk mengisi energi", "mendapat energi dari interaksi sosial", "membuat keputusan berdasarkan logika",
+                "membuat keputusan berdasarkan perasaan", "menyukai perencanaan detail sebelum bertindak", "bersikap spontan dan fleksibel",
+                "melihat gambaran besar daripada detail kecil", "fokus pada fakta dan detail konkret", "mudah merasa empati terhadap orang lain",
+                "menyelesaikan konflik secara langsung", "menghindari konfrontasi", "termotivasi oleh pencapaian target", "termotivasi oleh hubungan baik dengan orang lain"
+            ];
+           
+            const generated = new Set();
+            while (generated.size < numStatements) {
+                const subject = subjects[Math.floor(Math.random() * subjects.length)];
+                const action = actions[Math.floor(Math.random() * actions.length)];
+                let statement = `${subject} ${action}.`;
+                generated.add(statement.charAt(0).toUpperCase() + statement.slice(1));
+            }
+            return Array.from(generated).map(s => ({ statement: s }));
+        }
+
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showResults("Waktu Habis!");
+                }
+            }, 1000);
+        }
+
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            timerDisplayEl.textContent = `${minutes}:${seconds}`;
+        }
+
+
+        function loadStatement() {
+            const currentStatement = statements[currentStatementIndex];
+            statementTextEl.textContent = currentStatement.statement;
+           
+            updateNavigation();
+            updateOptionsStyle();
+
+
+            questionCounterEl.textContent = `Pernyataan ${currentStatementIndex + 1} dari ${totalStatements}`;
+            progressBarEl.style.width = `${((currentStatementIndex + 1) / totalStatements) * 100}%`;
+        }
+
+
+        function updateOptionsStyle() {
+            const selectedValue = userResponses[currentStatementIndex];
+            document.querySelectorAll('.option-btn').forEach(button => {
+                if (button.dataset.value == selectedValue) {
+                    button.classList.add('selected');
+                } else {
+                    button.classList.remove('selected');
+                }
+            });
+        }
+       
+        function updateNavigation() {
+            prevButton.disabled = currentStatementIndex === 0;
+            const hasAnswered = userResponses.hasOwnProperty(currentStatementIndex);
+            if (currentStatementIndex === totalStatements - 1) {
+                nextButton.textContent = "Selesai";
+                nextButton.disabled = !hasAnswered;
+            } else {
+                nextButton.textContent = "Berikutnya \u2192";
+                nextButton.disabled = !hasAnswered;
+            }
+        }
+
+
+
+
+        function processAnswer(value) {
+            userResponses[currentStatementIndex] = value;
+            updateOptionsStyle();
+            updateNavigation();
+        }
+
+
+        function showResults(title = "Kuis Selesai") {
+            clearInterval(timerInterval);
+            quizCard.classList.add('hidden');
+            resultsCard.classList.remove('hidden');
+            resultsTitleEl.textContent = title;
+            totalAnsweredEl.textContent = Object.keys(userResponses).length;
+        }
+
+
+        function prepareQuiz() {
+            statements = generateStatements(totalStatements);
+            currentStatementIndex = 0;
+            userResponses = {};
+            timeLeft = totalTime;
+            clearInterval(timerInterval);
+           
+            resultsCard.classList.add('hidden');
+            quizCard.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            updateTimerDisplay();
+        }
+
+
+        startButton.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            quizCard.classList.remove('hidden');
+            loadStatement();
+            startTimer();
+        });
+       
+        nextButton.addEventListener('click', () => {
+             if (currentStatementIndex === totalStatements - 1) {
+                showResults("Kuis Selesai");
+            } else {
+                currentStatementIndex++;
+                loadStatement();
+            }
+        });
+       
+        prevButton.addEventListener('click', () => {
+            if (currentStatementIndex > 0) {
+                currentStatementIndex--;
+                loadStatement();
+            }
+        });
+       
+        optionsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('button[data-value]')) {
+                processAnswer(parseInt(e.target.dataset.value));
+            }
+        });
+       
+        restartButton.addEventListener('click', prepareQuiz);
+
+
+        document.addEventListener('DOMContentLoaded', prepareQuiz);
+    </script>
+</body>
+</html>
